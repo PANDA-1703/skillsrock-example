@@ -1,0 +1,6 @@
+github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 h1:y5HC9v93H5EPKqaS1UYVg1uYah5Xf51mBfIoWehClUQ=
+github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964/go.mod h1:Xd9hchkHSWYkEqJwUGisez3G1QY8Ryz0sdWrLPMGjLk=
+github.com/joint-online-judge/go-gitignore v0.0.0-20250212104351-ad79a46f8dcc h1:OpfpvmpOubZJxe1bBcHZbpaBxrfc3+piBf1vMTv8sCM=
+github.com/joint-online-judge/go-gitignore v0.0.0-20250212104351-ad79a46f8dcc/go.mod h1:UmgFzzFaupfdS7tpibv5UBY+kkqnFHgIBEH9WUFWZ7E=
+github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=
+github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
