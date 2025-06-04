@@ -2,9 +2,16 @@ module outbox_pattern
 
 go 1.24.3
 
-require github.com/lib/pq v1.10.9
+require (
+	github.com/jackc/pgx/v5 v5.7.5
+	github.com/lib/pq v1.10.9
+)
 
 require (
-	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
-	github.com/joint-online-judge/go-gitignore v0.0.0-20250212104351-ad79a46f8dcc // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 )

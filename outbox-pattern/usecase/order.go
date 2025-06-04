@@ -2,25 +2,53 @@ package usecase
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"outbox_pattern/entity"
-	"outbox_pattern/repository"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
-type OrderUsecase struct {
-	db         *sql.DB
-	orderRepo  *repository.OrderRepository
-	outboxRepo *repository.OutboxRepository
+// Tx - общий интерфейс для транзакций
+type Tx interface {
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
 }
 
-func NewOrderUsecase(db *sql.DB, orderRepo *repository.OrderRepository, outboxRepo *repository.OutboxRepository) *OrderUsecase {
+// TxManager - начала транзакций
+type TxManager interface {
+	BeginTx(ctx context.Context) (pgx.Tx, error)
+}
+
+
+// OrderRepository - создание заказа
+type OrderRepository interface{
+	CreateOrder(ctx context.Context, tx pgx.Tx, order *entity.Order) error
+}
+
+// OutboxRepository - добавление в outbox
+type OutboxRepository interface {
+	AddToOutbox(ctx context.Context, tx pgx.Tx, message *entity.OutboxMessage) error
+}
+
+// OrderUsecase - мейн юзкейс
+type OrderUsecase struct {
+	txManager TxManager
+	orderRepo  OrderRepository
+	outboxRepo OutboxRepository
+}
+
+// NewOrderUsecase - конструктор
+func NewOrderUsecase(
+	txManager TxManager,
+	orderRepo OrderRepository,
+	outboxRepo OutboxRepository,
+) *OrderUsecase {
 	return &OrderUsecase{
-		db:         db,
-		orderRepo:  orderRepo,
+		txManager: txManager,
+		orderRepo: orderRepo,
 		outboxRepo: outboxRepo,
 	}
 }
@@ -32,11 +60,11 @@ func (uc *OrderUsecase) CreateOrder(ctx context.Context, userID int, amount int6
 	}
 
     // Начало транзакции
-	tx, err := uc.db.BeginTx(ctx, nil)
+	tx, err := uc.txManager.BeginTx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %v", err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
     // Создаем заказ
 	order := &entity.Order{
@@ -77,7 +105,7 @@ func (uc *OrderUsecase) CreateOrder(ctx context.Context, userID int, amount int6
 	}
 
     // Фиксируем транзакцию
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
