@@ -4,6 +4,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"outbox_pattern/entity"
 )
 
@@ -18,5 +19,9 @@ func NewOrderRepository(db *sql.DB) *OrderRepository {
 // Передаём транзакцию для атомарного создания заказа и пишем в outbox
 func (r *OrderRepository) CreateOrder(ctx context.Context, tx *sql.Tx, order *entity.Order) error {
 	query := "INSERT INTO orders (user_id, amount, status) VALUES ($1, $2, $3) RETURNING id"
-	return tx.QueryRowContext(ctx, query, order.UserID, order.Amount, order.Status).Scan(&order.ID)
+	err := tx.QueryRowContext(ctx, query, order.UserID, order.Amount, order.Status).Scan(&order.ID)
+	if err != nil {
+		return fmt.Errorf("failed create order: %v", err)
+	}
+	return nil
 }
