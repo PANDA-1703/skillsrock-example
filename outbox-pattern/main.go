@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"os/signal"
@@ -15,7 +17,20 @@ import (
 
 func main() {
 	// Коннект в БД
-	dsn := "postgres://user:password@localhost:5432/outbox_db?sslmode=disable"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	dbType := os.Getenv("DB")
+	user := os.Getenv("DB_USER")
+	passwd := os.Getenv("DB_PASSWORD")
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+
+	dsn := fmt.Sprintf("%s://%s:%s@%s:%s/%s?sslmode=disable", dbType, user, passwd, host, port, dbName)
+
 	ctx := context.Background()
 
 	pool, err := db.NewPgxPool(ctx, dsn)
@@ -38,21 +53,16 @@ func main() {
 	// Запуск воркера
 	outboxWorker := worker.NewOutboxWorker(outboxRepo, 5*time.Second)
 	go func() {
-        if err := outboxWorker.Start(ctx); err != nil{
-            log.Fatalf("failed running outboxworker: %v", err)
-        }
-    }()
+		if err := outboxWorker.Start(ctx); err != nil {
+			log.Fatalf("failed running outboxworker: %v", err)
+		}
+	}()
 
-    // graceful shutdown
-    quit := make(chan os.Signal, 1)
-    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-    <- quit
-    log.Println("Finishing working...")
+	// graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	log.Println("Graceful shutdown..")
 
-    <-ctx.Done()
-    log.Println("Graceful shutdown")
-	
 }

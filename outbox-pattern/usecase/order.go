@@ -22,9 +22,8 @@ type TxManager interface {
 	BeginTx(ctx context.Context) (pgx.Tx, error)
 }
 
-
 // OrderRepository - создание заказа
-type OrderRepository interface{
+type OrderRepository interface {
 	CreateOrder(ctx context.Context, tx pgx.Tx, order *entity.Order) error
 }
 
@@ -35,7 +34,7 @@ type OutboxRepository interface {
 
 // OrderUsecase - мейн юзкейс
 type OrderUsecase struct {
-	txManager TxManager
+	txManager  TxManager
 	orderRepo  OrderRepository
 	outboxRepo OutboxRepository
 }
@@ -47,26 +46,26 @@ func NewOrderUsecase(
 	outboxRepo OutboxRepository,
 ) *OrderUsecase {
 	return &OrderUsecase{
-		txManager: txManager,
-		orderRepo: orderRepo,
+		txManager:  txManager,
+		orderRepo:  orderRepo,
 		outboxRepo: outboxRepo,
 	}
 }
 
-// CreatedOrder - создать заказ
+// CreateOrder - создать заказ
 func (uc *OrderUsecase) CreateOrder(ctx context.Context, userID int, amount int64) error {
 	if amount <= 0 {
 		return errors.New("amount must be positive")
 	}
 
-    // Начало транзакции
+	// Начало транзакции
 	tx, err := uc.txManager.BeginTx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %v", err)
 	}
 	defer tx.Rollback(ctx)
 
-    // Создаем заказ
+	// Создаем заказ
 	order := &entity.Order{
 		UserID: userID,
 		Amount: amount,
@@ -77,7 +76,7 @@ func (uc *OrderUsecase) CreateOrder(ctx context.Context, userID int, amount int6
 		return fmt.Errorf("failed to create order: %v", err)
 	}
 
-    // Публикуем событие в брокер сообщений
+	// Публикуем событие в брокер сообщений
 	event := &entity.OrderEvent{
 		OrderID: order.ID,
 		UserID:  userID,
@@ -85,13 +84,13 @@ func (uc *OrderUsecase) CreateOrder(ctx context.Context, userID int, amount int6
 		Status:  "created",
 	}
 
-    // Сериализуем в JSON
+	// Сериализуем в JSON
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("failed to marshal event: %v", err)
 	}
 
-    // Пишем JSON в Go-структуру
+	// Пишем JSON в Go-структуру
 	outboxMsg := &entity.OutboxMessage{
 		EventType: "order_created",
 		Payload:   payload,
@@ -104,7 +103,7 @@ func (uc *OrderUsecase) CreateOrder(ctx context.Context, userID int, amount int6
 		return fmt.Errorf("failed to add to outbox: %v", err)
 	}
 
-    // Фиксируем транзакцию
+	// Фиксируем транзакцию
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
