@@ -51,13 +51,13 @@ func (r *OutboxRepository) GetUnsetMessages(ctx context.Context) ([]*entity.Outb
 		if err := rows.Scan(&msg.ID, &msg.EventType, &msg.Payload, &msg.CreatedAt, &msg.Sent, &sentAt, &msg.Attempts); err != nil {
 			return nil, fmt.Errorf("failed get unset events: %v", err)
 		}
-		if err := rows.Err(); err != nil {
-			return nil, fmt.Errorf("failed get unset events: %v", err)
-		}
 		if sentAt.Valid {
 			msg.SentAt = &sentAt.Time
 		}
 		messages = append(messages, &msg)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed get unset events: %v", err)
 	}
 	return messages, nil
 }
@@ -65,9 +65,12 @@ func (r *OutboxRepository) GetUnsetMessages(ctx context.Context) ([]*entity.Outb
 // TagAsSent - пометить ивент как отправленный
 func (r *OutboxRepository) TagAsSent(ctx context.Context, sentFlag bool, curAttempts int, id int64) error {
 	query := "UPDATE outbox_messages SET sent = $1, sent_at = $2, attempts = $3 WHERE id = $4"
-	_, err := r.pool.Exec(ctx, query, sentFlag, time.Now(), curAttempts+1, id)
+	commandTag, err := r.pool.Exec(ctx, query, sentFlag, time.Now(), curAttempts+1, id)
 	if err != nil {
 		return fmt.Errorf("failed tag event as sent: %v", err)
+	}
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("failed tag event as sent: rows is not inserted")
 	}
 	return nil
 }

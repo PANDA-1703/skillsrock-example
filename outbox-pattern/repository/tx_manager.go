@@ -13,12 +13,12 @@ type PgxManager struct {
 	pool *pgxpool.Pool
 }
 
-func NewPgxManager(pool *pgxpool.Pool) usecase.TxManager {
+func NewPgx(pool *pgxpool.Pool) usecase.TxManager {
 	return &PgxManager{pool: pool}
 }
 
 type PgxTx struct {
-	tx pgx.Tx
+	tx   pgx.Tx
 	conn *pgxpool.Conn
 }
 
@@ -27,7 +27,7 @@ func (p *PgxManager) BeginTx(ctx context.Context) (pgx.Tx, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed asquire: %v", err)
 	}
-	
+
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		conn.Release()
@@ -37,7 +37,7 @@ func (p *PgxManager) BeginTx(ctx context.Context) (pgx.Tx, error) {
 	return tx, nil
 }
 
-func (t *PgxTx) Commit(ctx context.Context) error{
+func (t *PgxTx) Commit(ctx context.Context) error {
 	err := t.tx.Commit(ctx)
 	t.conn.Release()
 	return fmt.Errorf("failed commit: %v", err)

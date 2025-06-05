@@ -40,7 +40,7 @@ type OrderUsecase struct {
 }
 
 // NewOrderUsecase - конструктор
-func NewOrderUsecase(
+func New(
 	txManager TxManager,
 	orderRepo OrderRepository,
 	outboxRepo OutboxRepository,

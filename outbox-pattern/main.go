@@ -39,19 +39,22 @@ func main() {
 	}
 	defer pool.Close()
 
-	txManager := repository.NewPgxManager(pool)
+	txManager := repository.NewPgx(pool)
 
 	orderRepo := repository.NewOrderRepository(pool)
 	outboxRepo := repository.NewOutboxRepository(pool)
-	orderUC := usecase.NewOrderUsecase(txManager, orderRepo, outboxRepo)
+	orderUC := usecase.New(txManager, orderRepo, outboxRepo)
 
 	// Создание заказа
 	if err := orderUC.CreateOrder(ctx, 1, 100); err != nil {
 		log.Printf("failed to create order: %v", err)
 	}
 
+	// Брокер-заглушка
+	mockBroker := worker.NewBroker()
+
 	// Запуск воркера
-	outboxWorker := worker.NewOutboxWorker(outboxRepo, 5*time.Second)
+	outboxWorker := worker.New(outboxRepo, mockBroker, 5*time.Second)
 	go func() {
 		if err := outboxWorker.Start(ctx); err != nil {
 			log.Fatalf("failed running outboxworker: %v", err)

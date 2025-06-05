@@ -25,9 +25,10 @@ type MessageBroker interface {
 	PublishOrderEvent(ctx context.Context, event *entity.OrderEvent) error
 }
 
-func NewOutboxWorker(outboxRepo OutboxRepository, interval time.Duration) *OutboxWorker {
+func New(outboxRepo OutboxRepository, broker MessageBroker, interval time.Duration) *OutboxWorker {
 	return &OutboxWorker{
 		outboxRepo: outboxRepo,
+		broker:     broker,
 		interval:   interval,
 	}
 }
